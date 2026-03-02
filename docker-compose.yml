@@ -1,0 +1,33 @@
+services:
+  as:
+    build: ./AS
+    container_name: as
+    ports:
+      - "53333:53333/udp" # 可选：方便你从宿主机用 nc 测 UDP
+    networks:
+      - labnet
+
+  fs:
+    build: ./FS
+    container_name: fs
+    depends_on:
+      - as
+    ports:
+      - "9090:9090" # 可选：方便你从宿主机直接 curl FS
+    networks:
+      - labnet
+
+  us:
+    build: ./US
+    container_name: us
+    depends_on:
+      - as
+      - fs
+    ports:
+      - "8080:8080" # 必须：你用浏览器访问 US
+    networks:
+      - labnet
+
+networks:
+  labnet:
+    driver: bridge

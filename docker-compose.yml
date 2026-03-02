@@ -3,7 +3,7 @@ services:
     build: ./AS
     container_name: as
     ports:
-      - "53333:53333/udp" # 可选：方便你从宿主机用 nc 测 UDP
+      - "53333:53333/udp"
     networks:
       - labnet
 
@@ -12,8 +12,13 @@ services:
     container_name: fs
     depends_on:
       - as
+    environment:
+      HOSTNAME: fibonacci.com
+      FS_IP: fs
+      AS_IP: as
+      AS_PORT: 53333
     ports:
-      - "9090:9090" # 可选：方便你从宿主机直接 curl FS
+      - "9090:9090"
     networks:
       - labnet
 
@@ -24,7 +29,7 @@ services:
       - as
       - fs
     ports:
-      - "8080:8080" # 必须：你用浏览器访问 US
+      - "8080:8080"
     networks:
       - labnet
 

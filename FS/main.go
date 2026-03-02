@@ -20,6 +20,7 @@ type RegisterRequest struct {
 }
 
 func main() {
+	go autoRegister()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/register", handleRegister)
 	mux.HandleFunc("/fibonacci", handleFibonacci)
@@ -161,4 +162,42 @@ func udpSendAndRecv(host string, port int, msg string, timeout time.Duration) (s
 		return "", err
 	}
 	return string(buf[:n]), nil
+}
+func autoRegister() {
+	hostname := os.Getenv("HOSTNAME")
+	if hostname == "" {
+		hostname = "fibonacci.com"
+	}
+
+	ip := os.Getenv("FS_IP")
+	if ip == "" {
+		ip = "fs"
+	}
+
+	asIP := os.Getenv("AS_IP")
+	if asIP == "" {
+		asIP = "as"
+	}
+
+	asPort := 53333
+	if asPortStr := os.Getenv("AS_PORT"); asPortStr != "" {
+		if p, err := strconv.Atoi(asPortStr); err == nil {
+			asPort = p
+		}
+	}
+
+	msg := fmt.Sprintf("TYPE=A\nNAME=%s\nVALUE=%s\nTTL=10\n", hostname, ip)
+
+	// ✅ 最多重试 15 次，每次间隔 1 秒
+	for i := 1; i <= 15; i++ {
+		_, err := udpSendAndRecv(asIP, asPort, msg, 2*time.Second)
+		if err == nil {
+			fmt.Println("Auto registered with AS")
+			return
+		}
+		fmt.Printf("Auto register attempt %d failed: %v\n", i, err)
+		time.Sleep(1 * time.Second)
+	}
+
+	fmt.Println("Auto register failed after retries")
 }
